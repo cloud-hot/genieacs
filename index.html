@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Genie ACS by zaidka</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/zaidka/genieacs">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/zaidka/genieacs/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/zaidka/genieacs/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Genie ACS</h1>
+          <p>A blazing fast TR-069 auto configuration server (ACS) built with node.js and MongoDB.</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/zaidka">zaidka</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>
+<a name="genie-acs" class="anchor" href="#genie-acs"><span class="octicon octicon-link"></span></a>Genie ACS</h1>
+
+<p>A blazing fast TR-069 auto configuration server (ACS) built with node.js and MongoDB.</p>
+
+<h2>
+<a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h2>
+
+<ul>
+<li>
+<em>Massively concurrent</em>: Can handle hundreds of thousands of connected devices on a single server even with low inform interval.</li>
+<li>
+<em>Preset-based configurations</em>: Predefine sets of configurations that devices will pick up and apply based on given preconditions.</li>
+<li>
+<em>Tagging</em>: Use tags to group devices for more manageable presets.</li>
+<li>
+<em>Searching</em>: Query for devices on any parameter (supports all common operators including regular expressions).</li>
+<li>
+<em>Parameter aliases</em>: Define aliases to unify parameter paths from different types of devices. Aliases behave like normal parameters (i.e. can query on it or set it's value).</li>
+</ul><h2>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<ul>
+<li><a href="http://mongodb.org">MongoDB</a></li>
+<li><a href="https://github.com/mongodb/node-mongodb-native">Node.js driver for MongoDB</a></li>
+<li><a href="http://memcached.org">Memcached</a></li>
+<li><a href="https://github.com/3rd-Eden/node-memcached">node-memcached</a></li>
+<li><a href="https://github.com/polotek/libxmljs">Libxmljs</a></li>
+</ul><h2>
+<a name="installation-notes" class="anchor" href="#installation-notes"><span class="octicon octicon-link"></span></a>Installation notes</h2>
+
+<ul>
+<li>Make sure you enable sockets for memcached and mongodb</li>
+<li>Genie keeps all running tasks in memcached. Increase memcached cache size depending on the number of available devices.</li>
+</ul>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
