@@ -59,10 +59,12 @@
 </ul><h2>
 <a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
 
-<p>Install <a href="http://nodejs.org/">Node.js</a>, <a href="http://redis.io/">Redis</a>, and <a href="http://www.mongodb.org/">MongoDB</a>. Refer to the corresponding documentation for installation guides. Use NPM to install GenieACS and its dependencies by typing:</p>
+<p>Install <a href="http://nodejs.org/">Node.js</a>, <a href="http://redis.io/">Redis</a>, and <a href="http://www.mongodb.org/">MongoDB</a>. Refer to the corresponding documentation for installation guides. Then use NPM to install GenieACS by typing:</p>
 
-<pre><code>npm install genieacs
+<pre><code>npm install -g genieacs
 </code></pre>
+
+<p>You may need to modify the configuration files under "config" directory (in /lib/node_modules/genieacs/config) depending on your setup.</p>
 
 <p>Alternatively, you can use git to get the latest development version (not recommended for production use):</p>
 
@@ -70,26 +72,33 @@
 git clone https://github.com/zaidka/genieacs.git
 cd genieacs
 npm install
+npm run configure
+npm run compile
 </code></pre>
-
-<p>System configuration files can be found under "config" directory. Copy the sample config files provided by removing the "-sample" suffix and modify as necessary.</p>
 
 <p>Finally, run the following in GNU Screen session or something similar:</p>
 
-<pre><code>node acs
+<pre><code>genieacs-acs
 </code></pre>
 
 <p>This is the service that the CPEs will communicate with. It listens to port 7547 by default (see config/config.json). Configure the ACS URL of your devices accordingly.</p>
 
-<pre><code>node api
+<pre><code>genieacs-api
 </code></pre>
 
 <p>This is the API module. It exposes the API on port 7557 by default. This is needed for the GUI front end to communicate with.</p>
 
-<pre><code>node files
+<pre><code>genieacs-files
 </code></pre>
 
 <p>This is the file server from which the CPEs will download firmware images and other types of files.</p>
+
+<p>You can use stream redirection to output to log files:</p>
+
+<pre><code>genieacs-acs &gt;&gt; /var/log/genieacs-acs.log 2&gt;&gt; /var/log/genieacs-acs-err.log
+genieacs-api &gt;&gt; /var/log/genieacs-api.log 2&gt;&gt; /var/log/genieacs-api-err.log
+genieacs-files &gt;&gt; /var/log/genieacs-files.log 2&gt;&gt; /var/log/genieacs-files-err.log
+</code></pre>
 
 <p>For further details about installation and configuration, refer to the <a href="https://github.com/zaidka/genieacs/wiki">wiki section</a>.</p>
 
