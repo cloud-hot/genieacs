@@ -3,7 +3,7 @@ common = require './common'
 util = require 'util'
 http = require 'http'
 https = require 'https'
-tr069 = require './tr-069'
+soap = require './soap'
 tasks = require './tasks'
 normalize = require('./normalize').normalize
 db = require './db'
@@ -32,7 +32,7 @@ writeResponse = (currentRequest, res) ->
 
   if config.DEBUG_DEVICES[currentRequest.deviceId]
     dump = "# RESPONSE #{new Date(Date.now())}\n" + JSON.stringify(res.headers) + "\n#{res.data}\n\n"
-    fs = require('fs').appendFile("debug/#{currentRequest.deviceId}.dump", dump, (err) ->
+    fs = require('fs').appendFile("../debug/#{currentRequest.deviceId}.dump", dump, (err) ->
       throw err if err
     )
 
@@ -139,23 +139,22 @@ inform = (currentRequest, cwmpRequest) ->
   actions.set._lastBoot = now if '1 BOOT' in cwmpRequest.methodRequest.event
   actions.set._lastBootstrap = lastBootstrap = now if '0 BOOTSTRAP' in cwmpRequest.methodRequest.event
 
-  db.redisClient.get("#{currentRequest.deviceId}_inform_hash", (err, res) ->
+  db.redisClient.get("#{currentRequest.deviceId}_inform_hash", (err, oldInformHash) ->
     throw err if err
-
-    if not res?
-      db.redisClient.setex("#{currentRequest.deviceId}_inform_hash", config.PRESETS_CACHE_DURATION, informHash, (err, res) ->
-        throw err if err
-      )
 
     updateAndRespond = () ->
       updateDevice(currentRequest, actions, (err) ->
         throw err if err
-        res = tr069.response(cwmpRequest.id, {methodResponse : {type : 'InformResponse'}}, {deviceId : currentRequest.deviceId})
+        res = soap.response(cwmpRequest.id, {methodResponse : {type : 'InformResponse'}}, {deviceId : currentRequest.deviceId})
         writeResponse(currentRequest, res)
       )
 
-    if res == informHash
+    if oldInformHash == informHash and not lastBootstrap?
       return updateAndRespond()
+
+    db.redisClient.setex("#{currentRequest.deviceId}_inform_hash", config.PRESETS_CACHE_DURATION, informHash, (err, res) ->
+      throw err if err
+    )
 
     # populate projection and parameterStructure
     parameterStructure = {}
@@ -202,6 +201,12 @@ inform = (currentRequest, cwmpRequest) ->
           actions.deletedObjects ?= []
           actions.deletedObjects.push("_customCommands.#{cmd}")
 
+        # clear presets hash if parameters are potentially modified
+        if _tasks.length > 0
+          db.redisClient.del("#{currentRequest.deviceId}_presets_hash", (err) ->
+            throw err if err
+          )
+
         apiFunctions.insertTasks(_tasks, {}, () ->
           updateAndRespond()
         )
@@ -245,7 +250,7 @@ runTask = (currentRequest, task, methodResponse) ->
           f = () ->
             db.redisClient.setex(String(task._id), config.CACHE_DURATION, JSON.stringify(task), (err) ->
               throw err if err
-              res = tr069.response(task._id, cwmpResponse)
+              res = soap.response(task._id, cwmpResponse)
               writeResponse(currentRequest, res)
             )
 
@@ -293,7 +298,7 @@ assertPresets = (currentRequest) ->
     presetsHash = res[1]
     if devicePresetsHash? and devicePresetsHash == presetsHash
       # no discrepancy, return empty response
-      res = tr069.response(null, {})
+      res = soap.response(null, {})
       writeResponse(currentRequest, res)
     else
       db.getPresetsObjectsAliases((allPresets, allObjects, allAliases) ->
@@ -334,7 +339,7 @@ assertPresets = (currentRequest) ->
                 runTask(currentRequest, task, {})
               )
             else
-              res = tr069.response(null, {}, {})
+              res = soap.response(null, {}, {})
               writeResponse(currentRequest, res)
           )
         )
@@ -392,7 +397,7 @@ listener = (httpRequest, httpResponse) ->
 
   httpRequest.addListener 'end', () ->
     cwmpResponse = {}
-    cwmpRequest = tr069.request(httpRequest)
+    cwmpRequest = soap.request(httpRequest)
 
     currentRequest = {
       httpRequest : httpRequest
@@ -406,7 +411,7 @@ listener = (httpRequest, httpResponse) ->
 
     if config.DEBUG_DEVICES[currentRequest.deviceId]
       dump = "# REQUEST #{new Date(Date.now())}\n" + JSON.stringify(httpRequest.headers) + "\n#{httpRequest.getBody()}\n\n"
-      require('fs').appendFile("debug/#{currentRequest.deviceId}.dump", dump, (err) ->
+      require('fs').appendFile("../debug/#{currentRequest.deviceId}.dump", dump, (err) ->
         throw err if err
       )
 
@@ -417,12 +422,12 @@ listener = (httpRequest, httpResponse) ->
         # do nothing
         util.log("#{currentRequest.deviceId}: Transfer complete")
         cwmpResponse.methodResponse = {type : 'TransferCompleteResponse'}
-        res = tr069.response(cwmpRequest.id, cwmpResponse, cookies)
+        res = soap.response(cwmpRequest.id, cwmpResponse, cookies)
         writeResponse(currentRequest, res)
       else if cwmpRequest.methodRequest.type is 'RequestDownload'
         requestDownloadResponse = () ->
           cwmpResponse.methodResponse = {type : 'RequestDownloadResponse'}
-          res = tr069.response(cwmpRequest.id, cwmpResponse, cookies)
+          res = soap.response(cwmpRequest.id, cwmpResponse, cookies)
           writeResponse(currentRequest, res)
         fileType = cwmpRequest.methodRequest.fileType
         util.log("#{currentRequest.deviceId}: RequestDownload (#{fileType})")
@@ -480,7 +485,7 @@ listener = (httpRequest, httpResponse) ->
       taskId = cwmpRequest.id
       if not taskId
         # Fault not related to a task. return empty response.
-        res = tr069.response(null, {}, {})
+        res = soap.response(null, {}, {})
         writeResponse(currentRequest, res)
         return
 
@@ -512,12 +517,12 @@ if cluster.isMaster
     , config.WORKER_RESPAWN_TIME)
   )
 
-  for i in [1 .. numCPUs]
+  for [1 .. numCPUs]
     cluster.fork()
 else
   options = {
-    key: fs.readFileSync('httpscert.key'),
-    cert: fs.readFileSync('httpscert.crt')
+    key: fs.readFileSync('../config/httpscert.key'),
+    cert: fs.readFileSync('../config/httpscert.crt')
   }
 
   httpServer = http.createServer(listener)
